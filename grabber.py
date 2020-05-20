@@ -87,12 +87,13 @@ def run():
     options.add_argument('--no-sandbox')
     options.add_argument('--remote-debugging-port=9222')
     options.add_argument('--log-level=3')
+    options.binary_location = os.getenv('CHROME_BIN_PATH')
 
     logger.debug('Opening web driver.')
-    driver = webdriver.Chrome('drivers/chromedriver81.exe', options=options)
+    driver = webdriver.Chrome(executable_path=os.getenv('CHROME_EXEC_PATH'), options=options,)
     driver.get('http://www.nse.com.ng')
 
-    number_of_retries = 36
+    number_of_retries = 12
     try_count = 0
     while try_count <= number_of_retries:
         if page_loaded(driver):
@@ -107,9 +108,19 @@ def run():
             driver.get('http://www.nse.com.ng')
             try_count += 1
             continue
+    
     logger.info('Fetched web page. Parsing.')
     soup = BeautifulSoup(driver.page_source, 'html.parser')
     log_time = str(datetime.now())
+
+    # quick hack for testing on heroku
+    if not os.path.exists('data'):
+        logger.debug('Creating new data directory.')
+        os.mkdir('data')
+        open('data/advancers.csv', 'w').close()
+        open('data/decliners.csv', 'w').close()
+        open('data/snapshots.csv', 'w').close()
+        open('data/trades.csv', 'w').close()
 
     logger.debug('Saving Advancers data.')
     advancers = get_advancers(soup=soup)
