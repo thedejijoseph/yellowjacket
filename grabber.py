@@ -1,10 +1,12 @@
 import os
+import time
 import logging
 from datetime import datetime
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
 
+import storage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -30,10 +32,13 @@ def get_snapshot(soup=None):
     table_body = target_data.find('tbody')
     data_rows = table_body.find_all('tr')[:-1]
 
-    snapshot = []
+    snapshot = {}
     for row in data_rows:
         variable, value = row.find_all('td')
-        snapshot.append([variable.text.strip(), value.text])
+        
+        indicator = variable.text.strip().lower().replace(' ', '_')
+        value = value.text
+        snapshot[indicator] = value
     
     return snapshot
 
@@ -77,10 +82,11 @@ def get_decliners(soup=None):
 todo:
     + code retry-on-failure feature into grabber block
     + introduce logging script-wide
-    introduce env variables into webdriver creation
+    + introduce env variables into webdriver creation
     introduce database saving into project
+    introduce scheduling upon deployment
 """
-def run():
+def run(test=False):
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
@@ -104,47 +110,36 @@ def run():
                 # log iinability to reach internet and terminate
                 logger.critical('Could not reach the internet. Terminating.')
                 return
-            
+            time.sleep(3)
             driver.get('http://www.nse.com.ng')
             try_count += 1
             continue
     
     logger.info('Fetched web page. Parsing.')
     soup = BeautifulSoup(driver.page_source, 'html.parser')
-    log_time = str(datetime.now())
 
-    # quick hack for testing on heroku
-    if not os.path.exists('data'):
-        logger.debug('Creating new data directory.')
-        os.mkdir('data')
-        open('data/advancers.csv', 'w').close()
-        open('data/decliners.csv', 'w').close()
-        open('data/snapshots.csv', 'w').close()
-        open('data/trades.csv', 'w').close()
+    if test:
+        logger.debug('Closing web driver.')
+        driver.quit()
+        return soup
+    
+    log_time = str(datetime.now())
+    
+    logger.debug('Saving Index Snapshot data.')
+    snapshot = get_snapshot(soup=soup)
+    storage.save_snapshot(snapshot, log_time=log_time)
+      
+    logger.debug('Saving Trades data.')
+    trades = get_trades(soup=soup)
+    storage.save_trades(trades, log_time=log_time)
 
     logger.debug('Saving Advancers data.')
     advancers = get_advancers(soup=soup)
-    with open('data/advancers.csv', 'a') as f:
-        for row in advancers:
-            f.write(f'{log_time}; {row[0]}; {row[1]}; {row[2]}; {row[3]}; {row[4]}\n')
+    storage.save_advancers(advancers, log_time=log_time)
     
     logger.debug('Saving Decliners data.')
     decliners = get_decliners(soup=soup)
-    with open('data/decliners.csv', 'a') as f:
-        for row in decliners:
-            f.write(f'{log_time}; {row[0]}; {row[1]}; {row[2]}; {row[3]}; {row[4]}\n')
-
-    logger.debug('Saving Index Snapshot data.')
-    snapshot = get_snapshot(soup=soup)
-    with open('data/snapshots.csv', 'a') as f:
-        for row in snapshot:
-            f.write(f'{log_time}; {row[0]}; {row[1]}\n')
-    
-    logger.debug('Saving Trades data.')
-    trades = get_trades(soup=soup)
-    with open('data/trades.csv', 'a') as f:
-        for row in trades:
-            f.write(f'{log_time}; {row[0]}; {row[1]}; {row[2]}\n')
+    storage.save_decliners(decliners, log_time=log_time)
     
     logger.info('Finished saving data.')
     logger.debug('Closing web driver.')
