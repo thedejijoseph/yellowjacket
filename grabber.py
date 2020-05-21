@@ -84,7 +84,8 @@ todo:
     + introduce logging script-wide
     + introduce env variables into webdriver creation
     + introduce database saving into project
-    introduce scheduling upon deployment
+    + introduce scheduling upon deployment
+    create interactive dashboard for insight
 """
 def run(test=False):
     options = webdriver.ChromeOptions()
