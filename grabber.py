@@ -83,7 +83,7 @@ todo:
     + code retry-on-failure feature into grabber block
     + introduce logging script-wide
     + introduce env variables into webdriver creation
-    introduce database saving into project
+    + introduce database saving into project
     introduce scheduling upon deployment
 """
 def run(test=False):
