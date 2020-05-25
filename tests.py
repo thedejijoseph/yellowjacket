@@ -4,7 +4,8 @@ import grabber
 grabber.logger.setLevel(grabber.logging.ERROR)
 
 class TestReturnType(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
         soup = grabber.run(test=True)
         self.soup = soup
 
