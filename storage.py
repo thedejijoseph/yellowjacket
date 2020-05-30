@@ -11,26 +11,26 @@ connection = mongo.connect(DATABASE_NAME, host=MONGO_URI)
 class StockStatus(mongo.EmbeddedDocument):
     log_time = mongo.DateTimeField()
     symbol = mongo.StringField()
-    last_close = mongo.StringField()
-    current = mongo.StringField()
-    change = mongo.StringField()
+    last_close = mongo.DecimalField()
+    current = mongo.DecimalField()
+    change = mongo.DecimalField()
     percent_change = mongo.StringField()
 
 class StockTrade(mongo.EmbeddedDocument):
     log_time = mongo.DateTimeField()
     symbol = mongo.StringField()
-    volume = mongo.StringField()
-    value = mongo.StringField()
+    volume = mongo.IntField()
+    value = mongo.DecimalField()
 
 class Snapshot(mongo.EmbeddedDocument):
     log_time = mongo.DateTimeField()
-    asi = mongo.StringField()
-    deals = mongo.StringField()
-    volume = mongo.StringField()
-    value = mongo.StringField()
-    equity_cap = mongo.StringField()
-    bond_cap = mongo.StringField()
-    etf_cap = mongo.StringField()
+    asi = mongo.DecimalField()
+    deals = mongo.DecimalField()
+    volume = mongo.DecimalField()
+    value = mongo.DecimalField()
+    equity_cap = mongo.DecimalField()
+    bond_cap = mongo.DecimalField()
+    etf_cap = mongo.DecimalField()
 
 class Snapshots(mongo.Document):
     log_time = mongo.DateTimeField()

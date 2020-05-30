@@ -37,7 +37,7 @@ def get_snapshot(soup=None):
         variable, value = row.find_all('td')
         
         indicator = variable.text.strip().lower().replace(' ', '_')
-        value = value.text
+        value = float(value.text.replace('N', '').replace(',', ''))
         snapshot[indicator] = value
     
     return snapshot
@@ -50,7 +50,10 @@ def get_trades(soup=None):
     trades = []
     for row in data_rows:
         symbol, volume, value = row.find_all('td')
-        trades.append([symbol.text, volume.text, value.text])
+
+        volume = int(volume.text.replace(',', ''))
+        value = float(value.text.replace('N', '').replace(',', ''))
+        trades.append([symbol.text, volume, value])
     
     return trades
 
@@ -62,7 +65,11 @@ def get_advancers(soup=None):
     advancers = []
     for row in data_rows:
         symbol, last_close, current, change, pct = row.find_all('td')
-        advancers.append([symbol.text, last_close.text, current.text, change.text, pct.text])
+
+        last_close = float(last_close.text.replace('N', '').replace(',', ''))
+        current = float(current.text.replace('N', '').replace(',', ''))
+        change = float(change.text.replace('N', '').replace(',', ''))
+        advancers.append([symbol.text, last_close, current, change, pct.text])
     
     return advancers
 
@@ -74,20 +81,15 @@ def get_decliners(soup=None):
     decliners = []
     for row in data_rows:
         symbol, last_close, current, change, pct = row.find_all('td')
-        decliners.append([symbol.text, last_close.text, current.text, change.text, pct.text])
+
+        last_close = float(last_close.text.replace('N', '').replace(',', ''))
+        current = float(current.text.replace('N', '').replace(',', ''))
+        change = float(change.text.replace('N', '').replace(',', ''))
+        decliners.append([symbol.text, last_close, current, change, pct.text])
     
     return decliners
 
-"""
-todo:
-    + code retry-on-failure feature into grabber block
-    + introduce logging script-wide
-    + introduce env variables into webdriver creation
-    + introduce database saving into project
-    + introduce scheduling upon deployment
-    create interactive dashboard for insight
-"""
-def run(test=False):
+def get_page_soup(url):
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
@@ -98,7 +100,7 @@ def run(test=False):
 
     logger.debug('Opening web driver.')
     driver = webdriver.Chrome(executable_path=os.getenv('CHROME_EXEC_PATH'), options=options,)
-    driver.get('http://www.nse.com.ng')
+    driver.get(url)
 
     number_of_retries = 12
     try_count = 0
@@ -112,16 +114,27 @@ def run(test=False):
                 logger.critical('Could not reach the internet. Terminating.')
                 return
             time.sleep(3)
-            driver.get('http://www.nse.com.ng')
+            driver.get(url)
             try_count += 1
             continue
     
     logger.info('Fetched web page. Parsing.')
     soup = BeautifulSoup(driver.page_source, 'html.parser')
+    
+    logger.debug('Closing web driver.')
+    driver.quit()
 
+    return soup
+    
+
+def run(test=False):
+    soup = get_page_soup('http://www.nse.com.ng')
+    
+    if not soup:
+        logger.warning('Unable to parse web page. Terminating.')
+        return
+    
     if test:
-        logger.debug('Closing web driver.')
-        driver.quit()
         return soup
     
     log_time = str(datetime.now())
@@ -143,8 +156,6 @@ def run(test=False):
     storage.save_decliners(decliners, log_time=log_time)
     
     logger.info('Finished saving data.')
-    logger.debug('Closing web driver.')
-    driver.quit()
 
 if  __name__ == "__main__":
     run()
