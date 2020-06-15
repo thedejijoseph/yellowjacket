@@ -3,6 +3,7 @@ import time
 import logging
 from datetime import datetime
 
+import pytz
 from bs4 import BeautifulSoup
 from selenium import webdriver
 
@@ -137,7 +138,8 @@ def run(test=False):
     if test:
         return soup
     
-    log_time = str(datetime.now())
+    utc_time = pytz.timezone('UTC')
+    log_time = datetime.now(utc_time)
     
     logger.debug('Saving Index Snapshot data.')
     snapshot = get_snapshot(soup=soup)

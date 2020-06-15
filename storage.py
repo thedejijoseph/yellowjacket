@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 
+import pytz
 import mongoengine as mongo
 
 MONGO_URI = os.getenv('MONGO_URI')
@@ -49,9 +50,14 @@ class Decliners(mongo.Document):
     stocks = mongo.ListField(mongo.EmbeddedDocumentField(StockStatus))
 
 
+def get_logtime():
+    # all log time should be in utc
+    utc_time = pytz.timezone('UTC')
+    return datetime.now(utc_time)
+
 def save_snapshot(snapshot, log_time=None):
     if not log_time:
-        log_time = str(datetime.now())
+        log_time = get_logtime()
     
     snapshot_data = Snapshot(
         log_time = log_time,
@@ -71,7 +77,7 @@ def save_snapshot(snapshot, log_time=None):
 
 def save_trades(trades, log_time=None):
     if not log_time:
-        log_time = str(datetime.now())
+        log_time = get_logtime()
     
     trades_data = Trades(log_time=log_time)
     for trade in trades:
@@ -86,7 +92,7 @@ def save_trades(trades, log_time=None):
 
 def save_advancers(advancers, log_time=None):
     if not log_time:
-        log_time = str(datetime.now())
+        log_time = get_logtime()
     
     advancers_data = Advancers(log_time=log_time)
     for stock in advancers:
@@ -103,7 +109,7 @@ def save_advancers(advancers, log_time=None):
 
 def save_decliners(decliners, log_time=None):
     if not log_time:
-        log_time = str(datetime.now())
+        log_time = get_logtime()
     
     decliners_data = Decliners(log_time=log_time)
     for stock in decliners:
